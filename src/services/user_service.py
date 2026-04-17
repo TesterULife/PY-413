@@ -1,6 +1,7 @@
 import bcrypt
 from email_validator import validate_email, EmailNotValidError
 import logging
+from sqlalchemy import UUID
 
 from src.engine import sync_session_factory
 from src.models.profile import Profile
@@ -8,12 +9,14 @@ from src.models.role import Role
 from src.models.user import User
 from src.models.userrole import UserRole
 
-
 """
-реализуйте функцию authenticate(email, password), которая:
-Ищет пользователя по email.
-Проверяет хеш пароля.
-Возвращает объект пользователя или ошибку.
+2. Регистрация пользователя
+Напишите функцию register_user(email, password, full_name), которая:
+
+Валидирует формат email.
+Хеширует пароль (bcrypt или аналог).
+Создаёт запись в User и связанную запись в Profile.
+По умолчанию присваивает роль «user» (через UserRole).
 """
 
 logging.basicConfig(
@@ -54,7 +57,7 @@ def register_user(email: str, password: str, full_name: str):
         )
         session.add(profile)
 
-        role = session.query(Role).filter_by(status_role='user').first()
+        role = session.query(Role).filter_by(name_role='user').first()
 
         if not role:
             logger.error(
@@ -73,33 +76,81 @@ def register_user(email: str, password: str, full_name: str):
         return user
 
 
-def remove_role(user_id: int, role_name: str):
-    with (sync_session_factory() as session):
+"""
+3. Авторизация и проверка пароля
+Реализуйте функцию authenticate(email, password), которая:
+
+Ищет пользователя по email.
+Проверяет хеш пароля.
+Возвращает объект пользователя или ошибку.
+"""
+
+def authenticate(email: str, password: str):
+    with sync_session_factory() as session:
+        user = session.query(User).filter_by(email=email).first()
+
+        if not user:
+            raise ValueError("Email not found")
+
+        if not bcrypt.checkpw(password.encode(), user.password.encode()):
+            logger.warning(
+                "This password is incorrect=%s",
+                password,
+            )
+            raise ValueError("Incorrect password")
+
+        return user
+
+
+"""
+8. Удаление и восстановление пользователей
+Добавьте флаг is_deleted в модель User.
+
+soft_delete_user(user_id) 
+— отмечает пользователя удалённым, но не стирает данные.
+
+restore_user(user_id) 
+— снимает флаг. Запрещает регистрацию
+ нового пользователя с тем же email, пока старый не удалён.
+"""
+
+
+def soft_delete_user(user_id: UUID):
+    with sync_session_factory() as session:
         user = session.query(User).filter_by(id=user_id).first()
 
         if not user:
-            raise ValueError('User not found')
+            raise ValueError('User_id not found')
 
-        role = session.query(Role).filter_by(name_role=role_name).first()
+        user.is_deleted = True
 
-        if not role:
-            raise ValueError('Role not found')
+        session.commit()
 
-        user_role = session.query(UserRole).filter_by(
-            user_id=user_id, role_id=role.id
+        return user
+
+
+def restore_user(user_id: UUID):
+    with sync_session_factory() as session:
+        user = session.query(User).filter_by(id=user_id).first()
+
+        if not user:
+            raise ValueError('User_id not found')
+
+        existing_user = session.query(User).filter(
+            User.email == user.email,
+            User.id != user.id
         ).first()
 
-        if not user_role:
-            raise ValueError("This user doesn't have this role")
 
-        user_roles = session.query(UserRole).filter_by(user_id=user_id).all()
-
-        if len(user_roles) <= 1:
+        if existing_user:
             logger.warning(
-                "Attempt to remove last role from user_id=%s",
-                user_id
+                "This email address already exists=%s",
+                existing_user.email,
             )
-            raise ValueError("Can't remove last role")
+            raise ValueError('This email is already registered')
 
-        session.delete(user_role)
+        user.is_deleted = False
+
         session.commit()
+
+        return user

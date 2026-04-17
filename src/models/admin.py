@@ -1,30 +1,33 @@
 import datetime
 
-from sqlalchemy import text, ForeignKey
+from sqlalchemy import text, ForeignKey, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.engine import Base
 
 """
-Создайте модель AdminLog (админ, действие, время, целевой пользователь).
-Вставляйте запись в AdminLog при каждом изменении ролей или
-удалении пользователей администратором.
+7. Логирование действий админа
+
+Создайте модель AdminLog (админ, действие, время, целевой пользователь). 
+Вставляйте запись в AdminLog при каждом изменении ролей 
+или удалении пользователей администратором.
 """
 
 
 class AdminLog(Base):
     __tablename__ = 'admin_table'
+
     id: Mapped[int] = mapped_column(primary_key=True)
     operation: Mapped[str] = mapped_column(nullable=False)
     time_operation: Mapped[datetime.datetime] = mapped_column(
         server_default=text("TIMEZONE('utc', now())")
     )
 
-    admin_id: Mapped[int] = mapped_column(
+    admin_id: Mapped[UUID] = mapped_column(
         ForeignKey('user.id', ondelete='CASCADE'),
         nullable=False,
     )
-    target_user_id: Mapped[int] = mapped_column(
+    target_user_id: Mapped[UUID] = mapped_column(
         ForeignKey('user.id', ondelete='CASCADE'),
         nullable=False,
     )

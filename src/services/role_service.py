@@ -1,19 +1,22 @@
+from sqlalchemy import UUID
 import logging
 
 from src.engine import sync_session_factory
 from src.models.role import Role
 from src.models.user import User
 from src.models.userrole import UserRole
+from src.models.admin import AdminLog
+from src.security.decorators import requires_roles
 
 """
+5. Назначение и снятие ролей
 Напишите функции:
 
-assign_role(user_id, role_name)
-— назначить роль пользователю (добавить в UserRole),
-если её ещё нет.
+assign_role(user_id, role_name) 
+— назначить роль пользователю (добавить в UserRole), если её ещё нет.
 
-remove_role(user_id, role_name)
-— снять роль (удалить из [30.06.2025 14:13]UserRole),
+remove_role(user_id, role_name) 
+— снять роль (удалить из [30.06.2025 14:13]UserRole), 
 но нельзя снять последнюю роль у пользователя.
 """
 
@@ -28,7 +31,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def assign_role(user_id: int, role_name: str):
+@requires_roles('admin')
+def assign_role(admin_id: UUID, user_id: UUID, role_name: str):
     with sync_session_factory() as session:
         user = session.query(User).filter_by(id=user_id).first()
 
@@ -58,11 +62,22 @@ def assign_role(user_id: int, role_name: str):
             role_id=role.id
         )
 
+        log = AdminLog(
+            admin_id=admin_id,
+            target_user_id=user_id,
+            operation="assign_role"
+        )
+
+        session.add(log)
+
         session.add(new_user_role)
         session.commit()
 
+        return True
 
-def remove_role(user_id: int, role_name: str):
+
+@requires_roles('admin')
+def remove_role(admin_id: UUID, user_id: UUID, role_name: str):
     with sync_session_factory() as session:
         user = session.query(User).filter_by(id=user_id).first()
 
@@ -92,5 +107,15 @@ def remove_role(user_id: int, role_name: str):
             )
             raise ValueError("Can't remove last role")
 
+        log = AdminLog(
+            admin_id=admin_id,
+            target_user_id=user_id,
+            operation="remove_role"
+        )
+
+        session.add(log)
+
         session.delete(user_role)
         session.commit()
+
+        return True
