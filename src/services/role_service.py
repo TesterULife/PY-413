@@ -42,7 +42,7 @@ def assign_role(admin_id: UUID, user_id: UUID, role_name: str):
         role = session.query(Role).filter_by(name_role=role_name).first()
 
         if not role:
-            raise ValueError('Role not found')
+            raise ValueError("Role not found")
 
         user_role = session.query(UserRole).filter_by(
             user_id=user_id,

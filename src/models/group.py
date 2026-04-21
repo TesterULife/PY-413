@@ -27,6 +27,6 @@ class Group(Base):
     )
 
     users: Mapped[list['User']] = relationship(
-        secondary='user_group',
+        secondary='user_groups',
         back_populates='groups'
     )

@@ -22,7 +22,7 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-config.set_main_option('sqlachemy.url', settings.DATABASE_URL_psycopg)
+config.set_main_option('sqlalchemy.url', settings.DATABASE_URL_psycopg)
 print(settings.DATABASE_URL_psycopg)
 
 target_metadata = Base.metadata

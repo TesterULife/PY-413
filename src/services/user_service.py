@@ -42,7 +42,21 @@ def register_user(email: str, password: str, full_name: str):
         bcrypt.gensalt()
     ).decode()
 
-    with sync_session_factory() as session:
+    with (sync_session_factory() as session):
+
+        existing_user = session.query(
+            User
+        ).filter_by(
+            email=valid_email
+        ).first()
+
+        if existing_user:
+            logger.warning(
+                "Email already registered: %s",
+                email,
+            )
+            raise ValueError("Email already registered")
+
         user = User(
             email=valid_email,
             password=hash_password,
@@ -73,6 +87,7 @@ def register_user(email: str, password: str, full_name: str):
 
         session.add(user_role)
         session.commit()
+        session.refresh(user)
         return user
 
 

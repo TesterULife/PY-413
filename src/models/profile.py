@@ -22,17 +22,13 @@ class Profile(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     status: Mapped[str] = mapped_column(nullable=False, default='offline')
-    birthday: Mapped[datetime.date] = mapped_column(nullable=False)
+    birthday: Mapped[datetime.date] = mapped_column(nullable=True)
     bio: Mapped[str] = mapped_column(nullable=True)
-    phone: Mapped[int] = mapped_column(nullable=False)
-
-    joined_at: Mapped[datetime.datetime] = mapped_column(
-        server_default=text("TIMEZONE('utc', now())")
-    )
+    phone: Mapped[int] = mapped_column(nullable=True)
 
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey('users.id'),
         primary_key=True
     )
 
-    user: Mapped['User'] = relationship(back_populates='profiles')
+    user: Mapped['User'] = relationship(back_populates='profile')

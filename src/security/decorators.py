@@ -1,5 +1,8 @@
 from functools import wraps
 from typing import Callable
+from src.engine import sync_session_factory
+from src.models.user import User
+
 
 """
 6. Ограничение доступа по ролям
@@ -14,17 +17,23 @@ def requires_roles(*roles):
     def decorator(func: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            user = kwargs.get('user')
+            admin_id = kwargs.get('admin_id')
 
-            if not user:
-                raise Exception("User is required")
+            if not admin_id:
+                raise Exception("admin is required")
 
-            user_roles = user.roles
+            with sync_session_factory() as session:
+                user = session.query(User).filter_by(id=admin_id).first()
 
-            if not any(role in user_roles for role in roles):
-                raise Forbidden("Access denied")
+                if not user:
+                    raise Exception("User not found")
 
-            return func(*args, **kwargs)
+                user_roles = user.roles
+
+                if not any(role.name_role in roles for role in user_roles):
+                    raise Forbidden("Access denied")
+
+                return func(*args, **kwargs)
 
         return wrapper
 

@@ -14,7 +14,7 @@ from src.engine import Base
 """
 
 class UserGroup(Base):
-    __tablename__ = 'user_group'
+    __tablename__ = 'user_groups'
 
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey('users.id', ondelete='CASCADE'),
@@ -22,6 +22,6 @@ class UserGroup(Base):
     )
 
     group_id: Mapped[int] = mapped_column(
-        ForeignKey('group.id', ondelete='CASCADE'),
+        ForeignKey('groups.id', ondelete='CASCADE'),
         primary_key=True
     )

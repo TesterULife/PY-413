@@ -32,20 +32,21 @@ logger = logging.getLogger(__name__)
 def create_role(admin_id: UUID, name: str, description: str):
     with sync_session_factory() as session:
         role = Role(
-            name=name,
+            name_role=name,
             description=description
         )
 
         log = AdminLog(
             admin_id=admin_id,
             target_user_id=None,
-            operation="create_role"
+            operation='create_role'
         )
 
         session.add(log)
 
         session.add(role)
         session.commit()
+        session.refresh(role)
 
         return role
 
@@ -70,12 +71,12 @@ def update_role(admin_id: UUID, role_id: int, **fields):
             if hasattr(role, key):
                 setattr(role, key, value)
             else:
-                raise ValueError(f"Field '{key}' does not exist")
+                raise ValueError(f'Field {key} does not exist')
 
         log = AdminLog(
             admin_id=admin_id,
             target_user_id=None,
-            operation="update_role"
+            operation='update_role'
         )
         session.add(log)
 
@@ -90,19 +91,19 @@ def delete_role(admin_id: UUID, role_id: int):
         role = session.query(Role).filter_by(id=role_id).first()
 
         if not role:
-            raise ValueError('Role not found')
+            raise ValueError("Role not found")
 
         exists = session.query(UserRole).filter_by(role_id=role_id).first()
 
         if exists:
-            raise ValueError("Cannot delete role with assigned users")
+            raise ValueError("Can not delete role with assigned users")
 
         log = AdminLog(
             admin_id=admin_id,
             target_user_id=None,
-            operation="delete_role"
+            operation='delete_role'
         )
-        session.add(log)
 
+        session.add(log)
         session.delete(role)
         session.commit()

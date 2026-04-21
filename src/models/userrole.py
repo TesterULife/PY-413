@@ -17,7 +17,7 @@ Profile (дополнительная информация о пользоват
 
 
 class UserRole(Base):
-    __tablename__ = 'users_role'
+    __tablename__ = 'user_roles'
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey('users.id', ondelete='CASCADE'),
         primary_key=True

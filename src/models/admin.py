@@ -24,12 +24,12 @@ class AdminLog(Base):
     )
 
     admin_id: Mapped[UUID] = mapped_column(
-        ForeignKey('user.id', ondelete='CASCADE'),
+        ForeignKey('users.id', ondelete='CASCADE'),
         nullable=False,
     )
     target_user_id: Mapped[UUID] = mapped_column(
-        ForeignKey('user.id', ondelete='CASCADE'),
-        nullable=False,
+        ForeignKey('users.id', ondelete='CASCADE'),
+        nullable=True,
     )
 
     admin: Mapped['User'] = relationship(

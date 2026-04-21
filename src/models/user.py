@@ -5,6 +5,11 @@ from sqlalchemy import text, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.engine import Base
+import src.models.userrole
+import src.models.usergroup
+from src.models.group import Group
+from src.models.profile import Profile
+from src.models.admin import AdminLog
 
 """
 1. Модели и миграции
@@ -29,25 +34,26 @@ class User(Base):
     email: Mapped[str] = mapped_column(nullable=False, unique=True)
     password: Mapped[str] = mapped_column(nullable=False)
 
+    joined_at: Mapped[datetime.datetime] = mapped_column(
+        server_default=text("TIMEZONE('utc', now())")
+    )
+
     # Flag from hw - task 8
     is_deleted: Mapped[bool] = mapped_column(
         nullable=False,
         default=False
     )
 
-    joined_at: Mapped[datetime.datetime] = mapped_column(
-        server_default=text("TIMEZONE('utc', now())")
-    )
     profile: Mapped['Profile'] = relationship(
         back_populates='user',
         uselist=False
     )
     roles: Mapped[list['Role']] = relationship(
         secondary='user_roles',
-        back_populates='users'
+        back_populates='roles'
     )
 
     groups: Mapped[list['Group']] = relationship(
-        secondary='user_group',
+        secondary='user_groups',
         back_populates='users'
     )
