@@ -34,7 +34,7 @@ class AdminLog(Base):
 
     admin: Mapped['User'] = relationship(
         foreign_keys=[admin_id],
-        backref='admin_actions'
+        backref='admin_actions'  # двусторонняя связь
     )
 
     target_user: Mapped['User'] = relationship(

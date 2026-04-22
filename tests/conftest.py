@@ -8,14 +8,14 @@ from src.models.role import Role
 from src.models.user import User
 from src.services.user_service import register_user
 from src.services.crud_roles import create_role
-
+from src.services.crud_group import create_group
 
 @pytest.fixture
 def uniq_email():
-    email = f"{uuid.uuid4()}@gmail.com"
+    def _email():
+        return f"{uuid.uuid4()}@gmail.com"
 
-    return email
-
+    return _email
 
 @pytest.fixture
 def origin_pass():
@@ -77,3 +77,14 @@ def uniq_role(admin):
     )
 
     return role
+
+@pytest.fixture
+def simple_group(admin):
+    title =  f'{uuid.uuid4()} group'
+    group = create_group(
+        admin_id=admin,
+        title=title
+    )
+
+    return group
+

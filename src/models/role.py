@@ -14,6 +14,7 @@ Profile (дополнительная информация о пользоват
 с соблюдением целостности (FK, уникальные и не-null поля).
 """
 
+
 class Role(Base):
     __tablename__ = 'roles'
     id: Mapped[int] = mapped_column(primary_key=True)

@@ -1,6 +1,6 @@
 import datetime
 
-from sqlalchemy import ForeignKey, text, UUID
+from sqlalchemy import ForeignKey, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.engine import Base
@@ -16,6 +16,7 @@ Profile (дополнительная информация о пользоват
 Реализуйте миграции для создания этих таблиц 
 с соблюдением целостности (FK, уникальные и не-null поля).
 """
+
 
 class Profile(Base):
     __tablename__ = 'profiles'

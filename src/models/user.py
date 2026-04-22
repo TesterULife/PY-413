@@ -5,11 +5,8 @@ from sqlalchemy import text, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.engine import Base
-import src.models.userrole
-import src.models.usergroup
 from src.models.group import Group
 from src.models.profile import Profile
-from src.models.admin import AdminLog
 
 """
 1. Модели и миграции
@@ -22,6 +19,7 @@ Profile (дополнительная информация о пользоват
 Реализуйте миграции для создания этих таблиц 
 с соблюдением целостности (FK, уникальные и не-null поля).
 """
+
 
 class User(Base):
     __tablename__ = 'users'
@@ -46,7 +44,7 @@ class User(Base):
 
     profile: Mapped['Profile'] = relationship(
         back_populates='user',
-        uselist=False
+        uselist=False # это один объект
     )
     roles: Mapped[list['Role']] = relationship(
         secondary='user_roles',

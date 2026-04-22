@@ -9,7 +9,6 @@ def test_create_role(admin):
         admin_id=admin,
         name='manager',
         description='manager can add users but can not delete them'
-
     )
 
     assert role is not None
@@ -44,7 +43,7 @@ def test_success_delete_role(admin):
     role = create_role(
         admin_id=admin,
         name='half user',
-        description='This is testing role'
+        description='This is tests role'
 
     )
 

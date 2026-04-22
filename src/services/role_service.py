@@ -1,11 +1,13 @@
-from sqlalchemy import UUID
 import logging
+from pathlib import Path
+
+from sqlalchemy import UUID
 
 from src.engine import sync_session_factory
+from src.models.admin import AdminLog
 from src.models.role import Role
 from src.models.user import User
 from src.models.userrole import UserRole
-from src.models.admin import AdminLog
 from src.security.decorators import requires_roles
 
 """
@@ -20,11 +22,17 @@ remove_role(user_id, role_name)
 но нельзя снять последнюю роль у пользователя.
 """
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
+LOG_FILE = LOG_DIR / "services.log"
+
 logging.basicConfig(
     level=logging.INFO,
-    filename='services.log',
+    filename=LOG_FILE,
     filemode='a',
-    format="%(asctime)s - %(levelname)s - %(message)s",
+    format='%(asctime)s - %(levelname)s - %(message)s',
     encoding='utf-8'
 )
 
@@ -34,88 +42,88 @@ logger = logging.getLogger(__name__)
 @requires_roles('admin')
 def assign_role(admin_id: UUID, user_id: UUID, role_name: str):
     with sync_session_factory() as session:
-        user = session.query(User).filter_by(id=user_id).first()
+        with session.begin():
+            user = session.query(User).filter_by(id=user_id).first()
 
-        if not user:
-            raise ValueError('User not found')
+            if not user:
+                raise ValueError('User not found')
 
-        role = session.query(Role).filter_by(name_role=role_name).first()
+            role = session.query(Role).filter_by(name_role=role_name).first()
 
-        if not role:
-            raise ValueError("Role not found")
+            if not role:
+                raise ValueError("Role not found")
 
-        user_role = session.query(UserRole).filter_by(
-            user_id=user_id,
-            role_id=role.id
-        ).first()
+            user_role = session.query(UserRole).filter_by(
+                user_id=user_id,
+                role_id=role.id
+            ).first()
 
-        if user_role:
-            logger.warning(
-                "User already has role (user_id=%s, role=%s)",
-                user_id,
-                role_name
+            if user_role:
+                logger.warning(
+                    "User already has role (user_id=%s, role=%s)",
+                    user_id,
+                    role_name
+                )
+                raise ValueError('This user already have this role')
+
+            new_user_role = UserRole(
+                user_id=user_id,
+                role_id=role.id
             )
-            raise ValueError('This user already have this role')
 
-        new_user_role = UserRole(
-            user_id=user_id,
-            role_id=role.id
-        )
+            log = AdminLog(
+                admin_id=admin_id,
+                target_user_id=user_id,
+                operation="assign_role"
+            )
 
-        log = AdminLog(
-            admin_id=admin_id,
-            target_user_id=user_id,
-            operation="assign_role"
-        )
+            session.add(log)
 
-        session.add(log)
+            session.add(new_user_role)
 
-        session.add(new_user_role)
-        session.commit()
-
-        return True
+            return True
 
 
 @requires_roles('admin')
 def remove_role(admin_id: UUID, user_id: UUID, role_name: str):
     with sync_session_factory() as session:
-        user = session.query(User).filter_by(id=user_id).first()
+        with session.begin():
+            user = session.query(User).filter_by(id=user_id).first()
 
-        if not user:
-            raise ValueError('User not found')
+            if not user:
+                raise ValueError('User not found')
 
-        role = session.query(Role).filter_by(name_role=role_name).first()
+            role = session.query(Role).filter_by(name_role=role_name).first()
 
-        if not role:
-            raise ValueError('Role not found')
+            if not role:
+                raise ValueError('Role not found')
 
-        user_role = session.query(UserRole).filter_by(
-            user_id=user_id,
-            role_id=role.id
-        ).first()
+            user_role = session.query(UserRole).filter_by(
+                user_id=user_id,
+                role_id=role.id
+            ).first()
 
-        if not user_role:
-            raise ValueError("This user doesn't have this role")
+            if not user_role:
+                raise ValueError("This user doesn't have this role")
 
-        user_roles = session.query(UserRole).filter_by(user_id=user_id).all()
+            user_roles = session.query(UserRole).filter_by(user_id=user_id).all()
 
-        if len(user_roles) <= 1:
-            logger.warning(
-                "Attempt to remove last role (user_id=%s, role=%s)",
-                user_id,
-                role_name
+            if len(user_roles) <= 1:
+                logger.warning(
+                    "Attempt to remove last role (user_id=%s, role=%s)",
+                    user_id,
+                    role_name
+                )
+                raise ValueError("Can't remove last role")
+
+            log = AdminLog(
+                admin_id=admin_id,
+                target_user_id=user_id,
+                operation="remove_role"
             )
-            raise ValueError("Can't remove last role")
 
-        log = AdminLog(
-            admin_id=admin_id,
-            target_user_id=user_id,
-            operation="remove_role"
-        )
+            session.add(log)
 
-        session.add(log)
+            session.delete(user_role)
 
-        session.delete(user_role)
-        session.commit()
-
-        return True
+            return True

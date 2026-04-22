@@ -1,10 +1,9 @@
 from sqlalchemy import select, func, cast, Date
 
 from src.engine import sync_session_factory
-from src.models.user import User
-from src.models.role import Role
 from src.models.profile import Profile
-
+from src.models.role import Role
+from src.models.user import User
 
 """
 10. Отчёты и метрики
@@ -15,6 +14,7 @@ from src.models.profile import Profile
 - Сгруппировать пользователей по дате регистрации 
     и вывести число регистраций за каждый день.
 """
+
 
 def active_users_for_role():
     """
@@ -28,18 +28,20 @@ def active_users_for_role():
     with sync_session_factory() as session:
         query = (
             select(
-                Role.name,
+                Role.name_role,
                 func.count(User.id.distinct()).label('active_users'),
             )
             .select_from(User)
             .join(User.roles)
             .where(User.is_deleted.is_(False))
-            .group_by(Role.name)
+            .group_by(Role.name_role)
         )
 
         result = session.execute(query)
         active_users = result.all()
         print(f'{active_users=}')
+
+        return active_users
 
 
 def users_without_profile():
@@ -62,6 +64,8 @@ def users_without_profile():
         without_profile = result.scalars().all()
         print(f'{without_profile=}')
 
+        return without_profile
+
 
 def group_by_registration_day():
     """
@@ -71,7 +75,7 @@ def group_by_registration_day():
     """
 
     with sync_session_factory() as session:
-        date_expr = cast(User.joined_at, Date)
+        date_expr = cast(User.joined_at, Date) # приведение типа
 
         query = (
             select(
@@ -88,4 +92,4 @@ def group_by_registration_day():
         registration_in_day = result.all()
         print(f'{registration_in_day=}')
 
-
+        return registration_in_day

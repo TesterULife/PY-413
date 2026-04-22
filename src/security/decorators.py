@@ -2,7 +2,8 @@ from functools import wraps
 from typing import Callable
 from src.engine import sync_session_factory
 from src.models.user import User
-
+from sqlalchemy.orm import selectinload
+import inspect # подгрузка данных, чтобы не делать отдельные запросы
 
 """
 6. Ограничение доступа по ролям
@@ -17,13 +18,19 @@ def requires_roles(*roles):
     def decorator(func: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            admin_id = kwargs.get('admin_id')
+            sig = inspect.signature(func)
+            bound = sig.bind(*args, **kwargs)
+            bound.apply_defaults()
+
+            admin_id = bound.arguments.get("admin_id")
 
             if not admin_id:
                 raise Exception("admin is required")
 
             with sync_session_factory() as session:
-                user = session.query(User).filter_by(id=admin_id).first()
+                user = session.query(User).options(
+                    selectinload(User.roles)
+                ).filter_by(id=admin_id).first()
 
                 if not user:
                     raise Exception("User not found")
